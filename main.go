@@ -125,6 +125,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "i":
+			if m.edit.editing {
+				break
+			}
+
 			// Toggle inventory view
 			if m.mode != "inventory" && m.file.fileSelected {
 				m.mode = "inventory"
@@ -190,8 +194,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmdList []tea.Cmd
 
 	// Update the filepicker
-	m.filepicker, cmd = m.filepicker.Update(msg)
-	cmdList = append(cmdList, cmd)
+	if !m.file.fileSelected && m.mode != "inventory" && !m.edit.editing {
+		m.filepicker, cmd = m.filepicker.Update(msg)
+		cmdList = append(cmdList, cmd)
+	}
 
 	// Update the appropriate list based on mode
 	if m.file.fileSelected {
@@ -311,6 +317,10 @@ func updateListSelection(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				m.edit.confirmSave = false
 			}
 		case "e":
+			if m.valueList.FilterState() == list.Filtering {
+				break
+			}
+
 			if m.edit.choice != nil && !m.edit.editing && !m.edit.confirmSave {
 				m.edit.editing = true
 				m.edit.newValueTextInput.SetValue("")
@@ -416,6 +426,9 @@ func updateInventorySelection(msg tea.Msg, m Model) (Model, tea.Cmd) {
 				m.edit.confirmSave = false
 			}
 		case "e":
+			if m.inventoryList.FilterState() == list.Filtering {
+				break
+			}
 			// Start editing the selected item's quantity
 			if !m.edit.editing && !m.edit.confirmSave {
 				item, ok := m.inventoryList.SelectedItem().(components.InventoryListItem)
@@ -768,7 +781,7 @@ func main() {
 	}
 
 	m := newModel()
-	p := tea.NewProgram(m)
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		panic(err)
 	}
